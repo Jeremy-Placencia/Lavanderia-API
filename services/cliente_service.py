@@ -15,6 +15,8 @@ def get_all_clientes():
     cursor = conexion.cursor(dictionary=True)
     cursor.execute("select * from clientes")
     clientes = cursor.fetchall()
+    if not clientes:
+        raise HTTPException(status_code=404, detail="No hay ningun cliente agregado")
     cursor.close()
     return clientes
 
