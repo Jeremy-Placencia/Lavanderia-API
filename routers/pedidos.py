@@ -9,24 +9,25 @@ class pedido(BaseModel):
     estado:str
     cliente_id:int
 
-
-@router.get("/todo-{id}")    
-def ver_todo(id:int):
-    return pedidos_service.ver_todo_pedido(id)
+class EstadoUpdate(BaseModel):
+    estado: str
 
 @router.get("/")
 def ver_pedido():
     return pedidos_service.ver_pedidos()
 
-@router.post("/")
-def crear_pedido(pedido:pedido):
-    pedidos_service.crear_pedido(pedido.fecha_entrada,pedido.fecha_entrega,pedido.estado,
-                                 pedido.cliente_id)
-    return {"mensaje": "pedido creado", "Datos": pedido}
+@router.get("/todo-{id}")    
+def ver_todo(id:int):
+    return pedidos_service.ver_todo_pedido(id)
 
 @router.get("/{id}")
 def ver_pedido_id(id:int):
     return pedidos_service.ver_pedido_id(id)
+
+@router.post("/")
+def crear_pedido(pedido:pedido):
+    nuevo_id = pedidos_service.crear_pedido(pedido.fecha_entrada, pedido.fecha_entrega, pedido.estado, pedido.cliente_id)
+    return {"id": nuevo_id}
 
 @router.delete("/{id}")
 def eliminar_pedido_id(id:int):
@@ -34,6 +35,6 @@ def eliminar_pedido_id(id:int):
     return {"mensaje": "Pedido eliminado correctamente", "ID": id}
 
 @router.put("/{id}")
-def editar_pedido_id(id:int,estado:str):
-    pedidos_service.actualizar_estado_id(id, estado)
-    return {"mensaje": "Pedido editado correctamente", "ID": id}
+def editar_pedido_id(id:int, body: EstadoUpdate):
+    pedidos_service.actualizar_estado_id(id, body.estado)
+    return {"mensaje": "Estado actualizado", "ID": id}

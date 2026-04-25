@@ -15,62 +15,74 @@ def ver_pedidos():
     cursor = conexion.cursor(dictionary=True)
     cursor.execute("SELECT * FROM pedidos")
     mostrar = cursor.fetchall()
-    if not mostrar:
-        raise HTTPException(status_code=404, detail="No hay ningun pedido agregado")
     cursor.close()
     return mostrar
 
-def crear_pedido(fecha_entrada:str,fecha_entrega:str,estado:str,cliente_id:int):
+def crear_pedido(fecha_entrada:str, fecha_entrega:str, estado:str, cliente_id:int):
     cursor = conexion.cursor()
     cursor.execute("INSERT INTO pedidos (fecha_entrada, fecha_entrega, estado, cliente_id) VALUES (%s, %s, %s, %s)",
-                   (fecha_entrada,fecha_entrega,estado,cliente_id))
+                   (fecha_entrada, fecha_entrega, estado, cliente_id))
     conexion.commit()
+    nuevo_id = cursor.lastrowid
     cursor.close()
+    return nuevo_id
 
 def ver_pedido_id(id:int):
     cursor = conexion.cursor(dictionary=True)
     cursor.execute("SELECT * FROM pedidos WHERE id = %s", (id,))
-    pedidos = cursor.fetchone()
-    if not pedidos:
-        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    pedido = cursor.fetchone()
     cursor.close()
-    return pedidos
+    if not pedido:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    return pedido
 
 def eliminar_pedido(id:int):
     cursor = conexion.cursor()
     cursor.execute("SELECT * FROM pedidos WHERE id = %s", (id,))
-    pedidos = cursor.fetchone()
-    if pedidos:
-        cursor.execute("delete from pedidos where id = %s", (id,))
-    else:
-        raise HTTPException(status_code=404, detail= "Pedido no encontrado")
+    pedido = cursor.fetchone()
+    if not pedido:
+        cursor.close()
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    cursor.execute("DELETE FROM detalle_pedido WHERE pedido_id = %s", (id,))
+    cursor.execute("DELETE FROM pedidos WHERE id = %s", (id,))
     conexion.commit()
     cursor.close()
 
-def actualizar_estado_id(id:int,estado:str):
+def actualizar_estado_id(id:int, estado:str):
     cursor = conexion.cursor()
     cursor.execute("SELECT * FROM pedidos WHERE id = %s", (id,))
     pedido = cursor.fetchone()
-    if pedido:
-        cursor.execute("update pedidos set estado = %s",(estado,))
-    else:
-        raise HTTPException(status_code=404, detail= "Pedido no encontrado")
+    if not pedido:
+        cursor.close()
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    cursor.execute("UPDATE pedidos SET estado = %s WHERE id = %s", (estado, id))
     conexion.commit()
     cursor.close()
 
 def ver_todo_pedido(id:int):
     cursor = conexion.cursor(dictionary=True)
-    cursor.execute("SELECT clientes.nombre, pedidos.fecha_entrega, pedidos.estado, prendas.nombre_prenda, detalle_pedido.cantidad,detalle_pedido.servicio,detalle_pedido.total FROM detalle_pedido JOIN prendas ON detalle_pedido.prenda_id = prendas.id JOIN pedidos ON detalle_pedido.pedido_id = pedidos.id JOIN clientes ON pedidos.cliente_id = clientes.id WHERE detalle_pedido.pedido_id = %s",(id,))
-    mostrar = cursor.fetchall()
-    total_general = sum(fila["total"] for fila in mostrar)
-    if not mostrar:
+    
+    cursor.execute("SELECT pedidos.id, clientes.nombre, pedidos.fecha_entrega, pedidos.estado FROM pedidos JOIN clientes ON pedidos.cliente_id = clientes.id WHERE pedidos.id = %s", (id,))
+    pedido = cursor.fetchone()
+    if not pedido:
+        cursor.close()
         raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    
+    cursor.execute("""
+        SELECT prendas.nombre_prenda, detalle_pedido.cantidad,
+        detalle_pedido.servicio, detalle_pedido.total
+        FROM detalle_pedido
+        JOIN prendas ON detalle_pedido.prenda_id = prendas.id
+        WHERE detalle_pedido.pedido_id = %s
+    """, (id,))
+    detalles = cursor.fetchall()
     cursor.close()
+    
     return {
-    "pedido_id": id,
-    "cliente": mostrar[0]["nombre"],
-    "fecha_entrega": mostrar[0]["fecha_entrega"],
-    "estado": mostrar[0]["estado"],
-    "prendas": [{"nombre_prenda": p["nombre_prenda"], "cantidad": p["cantidad"], "servicio": p["servicio"], "total": p["total"]} for p in mostrar],
-    "total_general": total_general
-}
+        "pedido_id": id,
+        "cliente": pedido["nombre"],
+        "fecha_entrega": str(pedido["fecha_entrega"]),
+        "estado": pedido["estado"],
+        "prendas": detalles if detalles else [{"mensaje": "Sin prendas agregadas"}],
+        "total_general": sum(d["total"] for d in detalles)
+    }
