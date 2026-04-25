@@ -86,3 +86,16 @@ def ver_todo_pedido(id:int):
         "prendas": detalles if detalles else [{"mensaje": "Sin prendas agregadas"}],
         "total_general": sum(d["total"] for d in detalles)
     }
+
+def ver_pedidos_por_estado(estado: str):
+    cursor = conexion.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT pedidos.id, clientes.nombre, clientes.telefono,
+        pedidos.fecha_entrega, pedidos.estado
+        FROM pedidos
+        JOIN clientes ON pedidos.cliente_id = clientes.id
+        WHERE pedidos.estado = %s
+    """, (estado,))
+    resultado = cursor.fetchall()
+    cursor.close()
+    return resultado

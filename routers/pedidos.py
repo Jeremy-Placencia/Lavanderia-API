@@ -16,6 +16,10 @@ class EstadoUpdate(BaseModel):
 def ver_pedido():
     return pedidos_service.ver_pedidos()
 
+@router.get("/listos")
+def ver_pedidos_listos():
+    return pedidos_service.ver_pedidos_por_estado("listo")
+
 @router.get("/todo-{id}")    
 def ver_todo(id:int):
     return pedidos_service.ver_todo_pedido(id)
