@@ -9,6 +9,11 @@ class pedido(BaseModel):
     estado:str
     cliente_id:int
 
+
+@router.get("/todo-{id}")    
+def ver_todo(id:int):
+    return pedidos_service.ver_todo_pedido(id)
+
 @router.get("/")
 def ver_pedido():
     return pedidos_service.ver_pedidos()

@@ -57,3 +57,20 @@ def actualizar_estado_id(id:int,estado:str):
         raise HTTPException(status_code=404, detail= "Pedido no encontrado")
     conexion.commit()
     cursor.close()
+
+def ver_todo_pedido(id:int):
+    cursor = conexion.cursor(dictionary=True)
+    cursor.execute("SELECT clientes.nombre, pedidos.fecha_entrega, pedidos.estado, prendas.nombre_prenda, detalle_pedido.cantidad,detalle_pedido.servicio,detalle_pedido.total FROM detalle_pedido JOIN prendas ON detalle_pedido.prenda_id = prendas.id JOIN pedidos ON detalle_pedido.pedido_id = pedidos.id JOIN clientes ON pedidos.cliente_id = clientes.id WHERE detalle_pedido.pedido_id = %s",(id,))
+    mostrar = cursor.fetchall()
+    total_general = sum(fila["total"] for fila in mostrar)
+    if not mostrar:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+    cursor.close()
+    return {
+    "pedido_id": id,
+    "cliente": mostrar[0]["nombre"],
+    "fecha_entrega": mostrar[0]["fecha_entrega"],
+    "estado": mostrar[0]["estado"],
+    "prendas": [{"nombre_prenda": p["nombre_prenda"], "cantidad": p["cantidad"], "servicio": p["servicio"], "total": p["total"]} for p in mostrar],
+    "total_general": total_general
+}
