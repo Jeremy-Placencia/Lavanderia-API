@@ -696,6 +696,28 @@ async function cambiarEstado(id, estadoActual) {
     cargarDashboard();
   } catch(e) { notif('Error actualizando estado', 'error'); }
 }
+async function verCliente(id) {
+    const res = await fetch(`http://localhost:8000/clientes/${id}`);
+    const data = await res.json();
+    console.log(data);
+}
+async function eliminarCliente(id) {
+    await fetch(`http://localhost:8000/clientes/${id}`, {
+        method: "DELETE"
+    });
+}
+async function actualizarCliente(id) {
+    await fetch(`http://localhost:8000/clientes/${id}`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            nombre: "Nuevo nombre",
+            telefono: "123456"
+        })
+    });
+}
 
 async function eliminarPedido(id) {
   if (!confirm('¿Eliminar pedido #' + id + '?')) return;
